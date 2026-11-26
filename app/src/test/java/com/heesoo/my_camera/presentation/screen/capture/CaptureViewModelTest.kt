@@ -20,9 +20,11 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -55,6 +57,7 @@ class CaptureViewModelTest {
 
         assertEquals(Phase.COMPLETE, viewModel.state.value.phase)
         assertEquals(R.string.capture_failed, viewModel.state.value.messageResId)
+        assertNull(withTimeoutOrNull(1) { viewModel.effect.first() })
         assertEquals(originalPhotoList, viewModel.state.value.photoFileList)
         assertTrue(originalPhotoList.all { photoFile -> photoFile.exists() })
         assertEquals(1, viewModel.state.value.retakesRemaining)
@@ -74,6 +77,7 @@ class CaptureViewModelTest {
         assertEquals(originalPhotoList, viewModel.state.value.photoFileList)
         assertEquals(1, viewModel.state.value.retakesRemaining)
         assertFalse(latePhoto.exists())
+        assertNull(withTimeoutOrNull(1) { viewModel.effect.first() })
     }
 
     @Test
@@ -88,6 +92,7 @@ class CaptureViewModelTest {
         assertEquals(listOf(originalPhotoList[0], replacementPhoto, originalPhotoList[2]), viewModel.state.value.photoFileList)
         assertFalse(originalPhotoList[1].exists())
         assertEquals(0, viewModel.state.value.retakesRemaining)
+        assertEquals(Effect.ShowCaptureFlash, viewModel.effect.first())
 
         viewModel.sendEvent(Event.ClickSlot(slotIndex = 0))
         viewModel.sendEvent(Event.ClickStartRetake)
@@ -133,6 +138,7 @@ class CaptureViewModelTest {
             viewModel.sendEvent(
                 Event.CaptureCompleted(requestId = finishCountdown(viewModel), photoFile = temporaryFolder.newFile()),
             )
+            assertEquals(Effect.ShowCaptureFlash, viewModel.effect.first())
         }
         return viewModel
     }

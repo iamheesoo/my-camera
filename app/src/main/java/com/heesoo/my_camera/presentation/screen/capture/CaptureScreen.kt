@@ -1,6 +1,8 @@
 package com.heesoo.my_camera.presentation.screen.capture
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,8 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -29,12 +34,19 @@ import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
 import com.heesoo.my_camera.presentation.screen.capture.composable.CaptureResult
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+private const val FLASH_PEAK_ALPHA = 0.65f
+private const val FLASH_HOLD_MILLIS = 75L
+private const val FLASH_FADE_MILLIS = 180
 
 @Composable
 internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val retakeSlotIndex = state.retakeSlotIndex
+    val flashAlpha = remember { Animatable(0f) }
 
     BackHandler(enabled = state.isSaving) {}
 
@@ -49,12 +61,25 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                 is Effect.TakePhoto -> listener.takePhoto(effect.requestId)
                 Effect.CheckSavePermission -> listener.checkSavePermission()
                 is Effect.GoToNextGuest -> listener.goToNextGuest(effect.frame)
+                Effect.ShowCaptureFlash -> launch {
+                    flashAlpha.snapTo(FLASH_PEAK_ALPHA)
+                    delay(FLASH_HOLD_MILLIS)
+                    flashAlpha.animateTo(targetValue = 0f, animationSpec = tween(FLASH_FADE_MILLIS))
+                }
                 Effect.GoToFrames -> listener.goToFrames()
             }
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.fillMaxSize().drawWithContent {
+            drawContent()
+            val alpha = flashAlpha.value
+            if (alpha > 0f) {
+                drawRect(color = Color.White, alpha = alpha)
+            }
+        },
+    ) {
         Column(
             modifier = Modifier.safeDrawingPadding().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),

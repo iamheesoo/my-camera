@@ -216,10 +216,15 @@ internal class CaptureViewModel(
         if (event.requestId == activeRequestId) {
             activeRequestId = null
             val retakeSlotIndex = state.value.retakeSlotIndex
-            when {
-                photoFile == null -> handleCaptureFailure(R.string.capture_failed)
-                retakeSlotIndex != null -> replacePhoto(slotIndex = retakeSlotIndex, photoFile = photoFile)
-                else -> appendPhoto(photoFile)
+            if (photoFile != null) {
+                if (retakeSlotIndex != null) {
+                    replacePhoto(slotIndex = retakeSlotIndex, photoFile = photoFile)
+                } else {
+                    appendPhoto(photoFile)
+                }
+                sendEffect(Effect.ShowCaptureFlash)
+            } else {
+                handleCaptureFailure(R.string.capture_failed)
             }
         } else {
             photoFile?.delete()
