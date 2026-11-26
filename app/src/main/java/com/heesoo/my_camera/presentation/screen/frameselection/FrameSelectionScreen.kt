@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,10 +39,12 @@ fun FrameSelectionScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(viewModel.effect, listener) {
+    val currentListener by rememberUpdatedState(listener)
+
+    LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is Effect.GoToCapture -> listener.goToCapture(effect.frame)
+                is Effect.GoToCapture -> currentListener.goToCapture(effect.frame)
             }
         }
     }

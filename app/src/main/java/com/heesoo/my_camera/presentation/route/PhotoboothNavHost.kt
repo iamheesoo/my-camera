@@ -1,7 +1,6 @@
 package com.heesoo.my_camera.presentation.route
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,47 +16,47 @@ import com.heesoo.my_camera.presentation.screen.tutorial.TutorialScreen
 @Composable
 fun PhotoboothNavHost() {
     val navController = rememberNavController()
-    val tutorialListener = remember(navController) {
-        object : TutorialListener {
-            override fun goToFrameSelection() {
-                navController.navigate(Route.FrameSelection) {
-                    popUpTo<Route.Tutorial> { inclusive = true }
-                    launchSingleTop = true
-                }
-            }
-        }
-    }
-    val frameSelectionListener = remember(navController) {
-        object : FrameSelectionListener {
-            override fun goToCapture(frame: PhotoFrame) {
-                navController.navigate(Route.Capture(frame = frame)) {
-                    launchSingleTop = true
-                }
-            }
-        }
-    }
-    val captureListener = remember(navController) {
-        object : CaptureListener {
-            override fun goToNextGuest(frame: PhotoFrame) {
-                navController.navigate(Route.Capture(frame = frame)) {
-                    popUpTo<Route.Capture> { inclusive = true }
-                }
-            }
-
-            override fun goToFrames() {
-                navController.popBackStack()
-            }
-        }
-    }
     NavHost(navController = navController, startDestination = Route.Tutorial) {
         composable<Route.Tutorial> {
-            TutorialScreen(viewModel = hiltViewModel(), listener = tutorialListener)
+            TutorialScreen(
+                viewModel = hiltViewModel(),
+                listener = object : TutorialListener {
+                    override fun goToFrameSelection() {
+                        navController.navigate(Route.FrameSelection) {
+                            popUpTo<Route.Tutorial> { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
+            )
         }
         composable<Route.FrameSelection> {
-            FrameSelectionScreen(viewModel = hiltViewModel(), listener = frameSelectionListener)
+            FrameSelectionScreen(
+                viewModel = hiltViewModel(),
+                listener = object : FrameSelectionListener {
+                    override fun goToCapture(frame: PhotoFrame) {
+                        navController.navigate(Route.Capture(frame = frame)) {
+                            launchSingleTop = true
+                        }
+                    }
+                },
+            )
         }
         composable<Route.Capture> {
-            CaptureRoute(viewModel = hiltViewModel(), listener = captureListener)
+            CaptureRoute(
+                viewModel = hiltViewModel(),
+                listener = object : CaptureListener {
+                    override fun goToNextGuest(frame: PhotoFrame) {
+                        navController.navigate(Route.Capture(frame = frame)) {
+                            popUpTo<Route.Capture> { inclusive = true }
+                        }
+                    }
+
+                    override fun goToFrames() {
+                        navController.popBackStack()
+                    }
+                },
+            )
         }
     }
 }
