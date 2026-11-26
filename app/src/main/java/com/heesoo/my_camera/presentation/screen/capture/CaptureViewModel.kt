@@ -1,5 +1,6 @@
 package com.heesoo.my_camera.presentation.screen.capture
 
+import android.graphics.Bitmap
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
@@ -18,7 +19,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class CaptureViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
+internal class CaptureViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val thumbnailDecoder: CaptureThumbnailDecoder,
+) :
     BaseMviViewModel<State, Event, Effect>(
         initialState = State(frame = savedStateHandle.toRoute<Route.Capture>().frame),
     ) {
@@ -37,7 +41,9 @@ class CaptureViewModel @Inject constructor(savedStateHandle: SavedStateHandle) :
         }
     }
 
-    internal fun isActiveRequest(requestId: Long): Boolean = activeRequestId == requestId
+    suspend fun loadThumbnail(photoFile: File): Bitmap? = thumbnailDecoder.decode(photoFile)
+
+    fun isActiveRequest(requestId: Long): Boolean = activeRequestId == requestId
 
     private fun updateCameraReadiness(isReady: Boolean) {
         setState { copy(isCameraReady = isReady) }

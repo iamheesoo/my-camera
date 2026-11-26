@@ -25,6 +25,7 @@ import com.heesoo.my_camera.R
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
+import com.heesoo.my_camera.presentation.screen.capture.composable.CaptureResult
 
 @Composable
 internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
@@ -49,6 +50,12 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
             when {
                 state.phase == Phase.COMPLETE -> {
                     Text(stringResource(R.string.capture_complete), style = MaterialTheme.typography.headlineMedium)
+                    CaptureResult(
+                        modifier = Modifier.weight(1f, fill = false),
+                        frame = state.frame,
+                        photoFileList = state.photoFileList,
+                        loadThumbnail = viewModel::loadThumbnail,
+                    )
                     Button(onClick = { viewModel.sendEvent(Event.ClickBackToFrames) }) {
                         Text(stringResource(R.string.back_to_frames))
                     }

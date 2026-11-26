@@ -14,4 +14,5 @@
     <string name="retry_current_slot">이 컷 다시 시작</string>
     <string name="capture_complete">촬영 완료</string>
     <string name="back_to_frames">프레임 선택으로</string>
+    <string name="captured_slot">%1$d번 사진</string>
 </resources>
