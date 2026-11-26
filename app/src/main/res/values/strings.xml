@@ -1,3 +1,30 @@
 <resources>
     <string name="app_name">my-camera</string>
+    <string name="start_capture">촬영 시작</string>
+    <string name="allow_camera">카메라 권한 허용</string>
+    <string name="camera_permission_needed">촬영하려면 카메라 권한이 필요해요.</string>
+    <string name="camera_unavailable">전면 카메라를 열 수 없어요.</string>
+    <string name="select_frame">프레임 선택</string>
+    <string name="frame_strip">3컷 세로형</string>
+    <string name="frame_grid">4컷 그리드</string>
+    <string name="capture_progress">%1$d / %2$d</string>
+    <string name="capture_countdown">%1$d</string>
+    <string name="capture_failed">촬영에 실패했어요.</string>
+    <string name="capture_interrupted">촬영을 일시 중지했어요.</string>
+    <string name="retry_current_slot">이 컷 다시 시작</string>
+    <string name="capture_complete">촬영 완료</string>
+    <string name="back_to_frames">프레임 선택으로</string>
+    <string name="captured_slot">%1$d번 사진</string>
+    <string name="retakes_remaining">재촬영 %1$d회 남음</string>
+    <string name="start_retake">이 컷 다시 찍기</string>
+    <string name="retake_progress">%1$d번 사진 재촬영</string>
+    <string name="cancel_retake">재촬영 취소</string>
+    <string name="save_photo">저장</string>
+    <string name="saving_photo">저장 중</string>
+    <string name="save_photo_complete">갤러리 저장 완료</string>
+    <string name="save_photo_failed">저장에 실패했어요. 다시 시도해 주세요.</string>
+    <string name="save_permission_needed">갤러리에 저장하려면 저장공간 권한이 필요해요.</string>
+    <string name="next_guest">다음 게스트</string>
+    <string name="change_frame">프레임 변경</string>
+    <string name="select_slot_to_retake">다시 찍을 컷을 선택해 주세요</string>
 </resources>
