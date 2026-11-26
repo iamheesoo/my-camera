@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.heesoo.my_camera.domain.model.PhotoFrame
+import com.heesoo.my_camera.presentation.screen.capture.CaptureListener
 import com.heesoo.my_camera.presentation.screen.capture.CaptureRoute
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionListener
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionScreen
@@ -23,20 +24,25 @@ fun PhotoboothNavHost() {
             }
         }
     }
+    val captureListener = remember(navController) {
+        object : CaptureListener {
+            override fun goToNextGuest(frame: PhotoFrame) {
+                navController.navigate(Route.Capture(frame = frame)) {
+                    popUpTo<Route.Capture> { inclusive = true }
+                }
+            }
+
+            override fun goToFrames() {
+                navController.popBackStack()
+            }
+        }
+    }
     NavHost(navController = navController, startDestination = Route.FrameSelection) {
         composable<Route.FrameSelection> {
             FrameSelectionScreen(viewModel = hiltViewModel(), listener = frameSelectionListener)
         }
         composable<Route.Capture> {
-            CaptureRoute(
-                viewModel = hiltViewModel(),
-                onBackToFrames = { navController.popBackStack() },
-                onNextGuest = { frame ->
-                    navController.navigate(Route.Capture(frame = frame)) {
-                        popUpTo<Route.Capture> { inclusive = true }
-                    }
-                },
-            )
+            CaptureRoute(viewModel = hiltViewModel(), listener = captureListener)
         }
     }
 }

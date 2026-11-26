@@ -46,10 +46,15 @@ private const val FLASH_HOLD_MILLIS = 75L
 private const val FLASH_FADE_MILLIS = 180
 
 @Composable
-internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
+internal fun CaptureContent(
+    viewModel: CaptureViewModel,
+    listener: CaptureListener,
+    deviceActions: CaptureDeviceActions,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentContext by rememberUpdatedState(LocalContext.current)
     val currentListener by rememberUpdatedState(listener)
+    val currentDeviceActions by rememberUpdatedState(deviceActions)
     val retakeSlotIndex = state.retakeSlotIndex
     val flashAlpha = remember(viewModel) { Animatable(0f) }
 
@@ -62,9 +67,9 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                Effect.RequestCameraPermission -> currentListener.requestCameraPermission()
-                is Effect.TakePhoto -> currentListener.takePhoto(effect.requestId)
-                Effect.CheckSavePermission -> currentListener.checkSavePermission()
+                Effect.RequestCameraPermission -> currentDeviceActions.requestCameraPermission()
+                is Effect.TakePhoto -> currentDeviceActions.takePhoto(effect.requestId)
+                Effect.CheckSavePermission -> currentDeviceActions.checkSavePermission()
                 is Effect.GoToNextGuest -> currentListener.goToNextGuest(effect.frame)
                 is Effect.ShowToast -> Toast.makeText(currentContext, effect.messageResId, Toast.LENGTH_SHORT).show()
                 Effect.ShowCaptureFlash -> launch {
@@ -131,7 +136,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                         Text(stringResource(if (state.isSaved) R.string.change_frame else R.string.back_to_frames))
                     }
                 }
-                listener.isPermissionGranted -> {
+                deviceActions.isPermissionGranted -> {
                     val progress = if (retakeSlotIndex != null) {
                         stringResource(R.string.retake_progress, retakeSlotIndex + 1)
                     } else {
@@ -143,7 +148,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                     )
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         AndroidView(
-                            factory = { listener.preview },
+                            factory = { deviceActions.preview },
                             modifier = Modifier.widthIn(max = 560.dp).aspectRatio(PhotoFrame.SLOT_ASPECT_RATIO),
                         )
                         CountdownOverlay(secondsFlow = viewModel.countdownSeconds)

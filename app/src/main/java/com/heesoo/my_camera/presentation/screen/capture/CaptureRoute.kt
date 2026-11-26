@@ -23,14 +23,12 @@ import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.heesoo.my_camera.domain.model.PhotoFrame
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 
 @Composable
 internal fun CaptureRoute(
     viewModel: CaptureViewModel,
-    onBackToFrames: () -> Unit,
-    onNextGuest: (PhotoFrame) -> Unit,
+    listener: CaptureListener,
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle()
     val isComplete by remember(state) {
@@ -85,10 +83,10 @@ internal fun CaptureRoute(
         }
     }
 
-    val listener = remember(
-        previewView, camera, permissionLauncher, savePermissionLauncher, viewModel, onBackToFrames, onNextGuest,
+    val deviceActions = remember(
+        previewView, camera, permissionLauncher, savePermissionLauncher, viewModel,
     ) {
-        object : CaptureListener {
+        object : CaptureDeviceActions {
             override val preview = previewView
             override val isPermissionGranted: Boolean
                 get() = isCameraPermissionGranted
@@ -118,10 +116,7 @@ internal fun CaptureRoute(
                 }
             }
 
-            override fun goToNextGuest(frame: PhotoFrame) = onNextGuest(frame)
-
-            override fun goToFrames() = onBackToFrames()
         }
     }
-    CaptureScreen(viewModel = viewModel, listener = listener)
+    CaptureContent(viewModel = viewModel, listener = listener, deviceActions = deviceActions)
 }
