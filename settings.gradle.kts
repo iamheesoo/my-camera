@@ -23,4 +23,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "my-camera"
-include(":app")
+include(":app", ":core")
