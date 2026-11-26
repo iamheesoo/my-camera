@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -46,48 +49,93 @@ internal fun TutorialScreen(viewModel: TutorialViewModel, listener: TutorialList
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.safeDrawingPadding().padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        val configuration = LocalConfiguration.current
+        val screenModifier = Modifier.fillMaxSize().safeDrawingPadding().padding(
+            horizontal = 24.dp,
+            vertical = 16.dp,
+        )
+        if (configuration.screenWidthDp > configuration.screenHeightDp) {
+            Row(
+                modifier = screenModifier,
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TutorialGuide(modifier = Modifier.weight(3f).fillMaxHeight())
+                TutorialActions(
+                    modifier = Modifier.weight(2f),
+                    state = state,
+                    onClickStart = { viewModel.sendEvent(Event.ClickStart) },
+                )
+            }
+        } else {
             Column(
-                modifier = Modifier.weight(1f).widthIn(max = 480.dp).fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                modifier = screenModifier,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text(
-                    text = stringResource(R.string.tutorial_title),
-                    modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
-                    style = MaterialTheme.typography.headlineMedium,
+                TutorialGuide(
+                    modifier = Modifier.weight(1f).widthIn(max = 480.dp).fillMaxWidth(),
                 )
-                TutorialStep(
-                    titleResId = R.string.tutorial_capture_title,
-                    descriptionResId = R.string.tutorial_capture_description,
-                )
-                TutorialStep(
-                    titleResId = R.string.tutorial_retake_title,
-                    descriptionResId = R.string.tutorial_retake_description,
-                )
-                TutorialStep(
-                    titleResId = R.string.tutorial_save_title,
-                    descriptionResId = R.string.tutorial_save_description,
+                TutorialActions(
+                    modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+                    state = state,
+                    onClickStart = { viewModel.sendEvent(Event.ClickStart) },
                 )
             }
-            if (state.hasCompletionError) {
-                Text(
-                    text = stringResource(R.string.tutorial_completion_failed),
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Button(
-                onClick = { viewModel.sendEvent(Event.ClickStart) },
-                enabled = !state.isCompleting,
-                modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-            ) {
-                Text(stringResource(if (state.isCompleting) R.string.tutorial_completing else R.string.tutorial_start))
-            }
+        }
+    }
+}
+
+@Composable
+private fun TutorialGuide(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+    ) {
+        Text(
+            text = stringResource(R.string.tutorial_title),
+            modifier = Modifier.padding(bottom = 8.dp).semantics { heading() },
+            style = MaterialTheme.typography.headlineMedium,
+        )
+        TutorialStep(
+            titleResId = R.string.tutorial_capture_title,
+            descriptionResId = R.string.tutorial_capture_description,
+        )
+        TutorialStep(
+            titleResId = R.string.tutorial_retake_title,
+            descriptionResId = R.string.tutorial_retake_description,
+        )
+        TutorialStep(
+            titleResId = R.string.tutorial_save_title,
+            descriptionResId = R.string.tutorial_save_description,
+        )
+    }
+}
+
+@Composable
+private fun TutorialActions(
+    modifier: Modifier = Modifier,
+    state: TutorialContract.State,
+    onClickStart: () -> Unit,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (state.hasCompletionError) {
+            Text(
+                text = stringResource(R.string.tutorial_completion_failed),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        Button(
+            onClick = onClickStart,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !state.isCompleting,
+        ) {
+            Text(stringResource(if (state.isCompleting) R.string.tutorial_completing else R.string.tutorial_start))
         }
     }
 }
