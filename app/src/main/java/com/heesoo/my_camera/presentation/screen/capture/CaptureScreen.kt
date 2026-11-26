@@ -29,6 +29,7 @@ import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
 import com.heesoo.my_camera.presentation.screen.capture.composable.CaptureResult
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
@@ -114,18 +115,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                             factory = { listener.preview },
                             modifier = Modifier.widthIn(max = 560.dp).aspectRatio(PhotoFrame.SLOT_ASPECT_RATIO),
                         )
-                        if (state.phase == Phase.COUNTDOWN) {
-                            Surface(
-                                shape = MaterialTheme.shapes.large,
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.capture_countdown, state.secondsRemaining),
-                                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                                    style = MaterialTheme.typography.displayLarge,
-                                )
-                            }
-                        }
+                        CountdownOverlay(secondsFlow = viewModel.countdownSeconds)
                     }
                     state.messageResId?.let { messageResId -> Text(stringResource(messageResId)) }
                     if (state.phase == Phase.PAUSED && state.isCameraReady) {
@@ -147,6 +137,23 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                     Text(stringResource(R.string.cancel_retake))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CountdownOverlay(secondsFlow: StateFlow<Int?>) {
+    val secondsRemaining by secondsFlow.collectAsStateWithLifecycle()
+    secondsRemaining?.let { seconds ->
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+        ) {
+            Text(
+                text = stringResource(R.string.capture_countdown, seconds),
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                style = MaterialTheme.typography.displayLarge,
+            )
         }
     }
 }

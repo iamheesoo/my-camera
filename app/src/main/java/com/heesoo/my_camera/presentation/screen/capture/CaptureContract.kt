@@ -20,7 +20,6 @@ object CaptureContract {
         val isSaving: Boolean,
         val isSaved: Boolean,
         val isCameraReady: Boolean,
-        val secondsRemaining: Int,
         @param:StringRes val messageResId: Int?,
     ) : UiState
 

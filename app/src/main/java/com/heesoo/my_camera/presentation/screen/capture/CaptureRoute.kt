@@ -14,10 +14,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -30,8 +32,10 @@ internal fun CaptureRoute(
     onBackToFrames: () -> Unit,
     onNextGuest: (PhotoFrame) -> Unit,
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val isComplete = state.phase == Phase.COMPLETE
+    val state = viewModel.state.collectAsStateWithLifecycle()
+    val isComplete by remember(state) {
+        derivedStateOf(structuralEqualityPolicy()) { state.value.phase == Phase.COMPLETE }
+    }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var isCameraPermissionGranted by remember(context) {

@@ -19,6 +19,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -37,7 +39,6 @@ internal class CaptureViewModel(
         isSaving = false,
         isSaved = false,
         isCameraReady = false,
-        secondsRemaining = 0,
         messageResId = null,
     ),
 ) {
@@ -52,6 +53,9 @@ internal class CaptureViewModel(
         thumbnailDecoder = thumbnailDecoder,
         savePhotoUseCase = savePhotoUseCase,
     )
+
+    private val mutableCountdownSeconds = MutableStateFlow<Int?>(null)
+    val countdownSeconds = mutableCountdownSeconds.asStateFlow()
 
     private var countdownJob: Job? = null
     private var nextRequestId = 0L
@@ -193,15 +197,16 @@ internal class CaptureViewModel(
     }
 
     private fun startCountdown() {
-        setState { copy(phase = Phase.COUNTDOWN, secondsRemaining = COUNTDOWN_SECONDS, messageResId = null) }
+        setState { copy(phase = Phase.COUNTDOWN, messageResId = null) }
         countdownJob = viewModelScope.launch {
             for (remaining in COUNTDOWN_SECONDS downTo 1) {
-                setState { copy(secondsRemaining = remaining) }
+                mutableCountdownSeconds.value = remaining
                 delay(ONE_SECOND_MILLIS)
             }
             val requestId = ++nextRequestId
             activeRequestId = requestId
-            setState { copy(phase = Phase.TAKING_PHOTO, secondsRemaining = 0) }
+            mutableCountdownSeconds.value = null
+            setState { copy(phase = Phase.TAKING_PHOTO) }
             sendEffect(Effect.TakePhoto(requestId = requestId))
         }
     }
@@ -252,7 +257,7 @@ internal class CaptureViewModel(
             returnToResult(messageResId)
         } else {
             cancelPendingCapture()
-            setState { copy(phase = Phase.PAUSED, secondsRemaining = 0, messageResId = messageResId) }
+            setState { copy(phase = Phase.PAUSED, messageResId = messageResId) }
         }
     }
 
@@ -263,7 +268,6 @@ internal class CaptureViewModel(
                 phase = Phase.COMPLETE,
                 retakeSlotIndex = null,
                 isCameraReady = false,
-                secondsRemaining = 0,
                 messageResId = messageResId,
             )
         }
@@ -271,6 +275,7 @@ internal class CaptureViewModel(
 
     private fun cancelPendingCapture() {
         countdownJob?.cancel()
+        mutableCountdownSeconds.value = null
         activeRequestId = null
     }
 
