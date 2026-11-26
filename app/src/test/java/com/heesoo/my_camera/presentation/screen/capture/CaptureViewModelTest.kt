@@ -1,11 +1,15 @@
 package com.heesoo.my_camera.presentation.screen.capture
 
 import com.heesoo.my_camera.R
+import com.heesoo.my_camera.data.local.CaptureBitmapDecoder
+import com.heesoo.my_camera.domain.repository.PhotoRepository
+import com.heesoo.my_camera.domain.usecase.SavePhotoUseCase
 import com.heesoo.my_camera.domain.model.PhotoFrame
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -91,8 +95,39 @@ class CaptureViewModelTest {
         assertEquals(1, createViewModel().state.value.retakesRemaining)
     }
 
-    private suspend fun TestScope.completedSession(): CaptureViewModel {
-        val viewModel = createViewModel()
+    @Test
+    fun failedSaveKeepsResultAndCanBeRetriedWithoutDuplicateWrites() = runTest {
+        var attempts = 0
+        val viewModel = completedSession(createViewModel { _, _ ->
+            attempts++
+            if (attempts == 1) {
+                throw IOException("Storage unavailable")
+            }
+        })
+        val originalPhotoList = viewModel.state.value.photoFileList
+
+        viewModel.sendEvent(Event.ClickSave)
+        viewModel.sendEvent(Event.SavePermissionResult(isGranted = true))
+        runCurrent()
+
+        assertEquals(R.string.save_photo_failed, viewModel.state.value.messageResId)
+        assertEquals(originalPhotoList, viewModel.state.value.photoFileList)
+        assertFalse(viewModel.state.value.isSaved)
+
+        viewModel.sendEvent(Event.ClickSave)
+        viewModel.sendEvent(Event.ClickSave)
+        viewModel.sendEvent(Event.SavePermissionResult(isGranted = true))
+        viewModel.sendEvent(Event.SavePermissionResult(isGranted = true))
+        runCurrent()
+        assertTrue(viewModel.state.value.isSaved)
+
+        viewModel.sendEvent(Event.ClickSave)
+        viewModel.sendEvent(Event.SavePermissionResult(isGranted = true))
+        runCurrent()
+        assertEquals(2, attempts)
+    }
+
+    private suspend fun TestScope.completedSession(viewModel: CaptureViewModel = createViewModel()): CaptureViewModel {
         viewModel.sendEvent(Event.CameraReadyChanged(isReady = true))
         repeat(PhotoFrame.STRIP.slotCount) {
             viewModel.sendEvent(
@@ -115,8 +150,16 @@ class CaptureViewModelTest {
         return (viewModel.effect.first() as Effect.TakePhoto).requestId
     }
 
-    private fun createViewModel() = CaptureViewModel(
+    private fun createViewModel(
+        onSave: suspend (PhotoFrame, List<File>) -> Unit = { _, _ -> },
+    ) = CaptureViewModel(
         frame = PhotoFrame.STRIP,
-        thumbnailDecoder = CaptureThumbnailDecoder(ioDispatcher = dispatcher),
+        thumbnailDecoder = CaptureThumbnailDecoder(ioDispatcher = dispatcher, decoder = CaptureBitmapDecoder()),
+        savePhotoUseCase = SavePhotoUseCase(
+            repository = object : PhotoRepository {
+                override suspend fun save(frame: PhotoFrame, photoFileList: List<File>) =
+                    onSave(frame, photoFileList)
+            },
+        ),
     )
 }

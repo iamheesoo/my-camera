@@ -7,6 +7,7 @@ import androidx.navigation.toRoute
 import com.heesoo.my_camera.R
 import com.heesoo.my_camera.core.mvi.BaseMviViewModel
 import com.heesoo.my_camera.domain.model.PhotoFrame
+import com.heesoo.my_camera.domain.usecase.SavePhotoUseCase
 import com.heesoo.my_camera.presentation.route.Route
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
@@ -15,6 +16,7 @@ import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.State
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -23,20 +25,24 @@ import kotlinx.coroutines.launch
 internal class CaptureViewModel(
     frame: PhotoFrame,
     private val thumbnailDecoder: CaptureThumbnailDecoder,
+    private val savePhotoUseCase: SavePhotoUseCase,
 ) : BaseMviViewModel<State, Event, Effect>(initialState = State(frame = frame)) {
 
     @Inject
     constructor(
         savedStateHandle: SavedStateHandle,
         thumbnailDecoder: CaptureThumbnailDecoder,
+        savePhotoUseCase: SavePhotoUseCase,
     ) : this(
         frame = savedStateHandle.toRoute<Route.Capture>().frame,
         thumbnailDecoder = thumbnailDecoder,
+        savePhotoUseCase = savePhotoUseCase,
     )
 
     private var countdownJob: Job? = null
     private var nextRequestId = 0L
     private var activeRequestId: Long? = null
+    private var isAwaitingSavePermission = false
 
     override fun handleEvent(event: Event) {
         when (event) {
@@ -45,7 +51,9 @@ internal class CaptureViewModel(
             Event.ClickStartRetake -> startRetake()
             Event.ClickCancelRetake -> cancelRetake()
             Event.ClickRetryCapture -> retryCapture()
-            Event.ClickBackToFrames -> sendEffect(Effect.GoToFrames)
+            Event.ClickBackToFrames -> goToFrames()
+            Event.ClickSave -> requestSave()
+            is Event.SavePermissionResult -> handleSavePermission(event.isGranted)
             Event.CameraUnavailable -> showCameraUnavailable()
             is Event.CameraReadyChanged -> updateCameraReadiness(event.isReady)
             is Event.CaptureCompleted -> completeCapture(event)
@@ -76,6 +84,8 @@ internal class CaptureViewModel(
     private fun selectSlot(slotIndex: Int) {
         val currentState = state.value
         if (currentState.phase == Phase.COMPLETE &&
+            !currentState.isSaving &&
+            !currentState.isSaved &&
             currentState.retakesRemaining > 0 &&
             slotIndex in currentState.photoFileList.indices
         ) {
@@ -87,6 +97,8 @@ internal class CaptureViewModel(
         val currentState = state.value
         val slotIndex = currentState.selectedSlotIndex
         if (currentState.phase == Phase.COMPLETE &&
+            !currentState.isSaving &&
+            !currentState.isSaved &&
             currentState.retakesRemaining > 0 &&
             slotIndex != null &&
             slotIndex in currentState.photoFileList.indices
@@ -105,6 +117,46 @@ internal class CaptureViewModel(
     private fun cancelRetake() {
         if (state.value.retakeSlotIndex != null) {
             returnToResult()
+        }
+    }
+
+    private fun goToFrames() {
+        if (!state.value.isSaving) {
+            sendEffect(Effect.GoToFrames)
+        }
+    }
+
+    private fun requestSave() {
+        val currentState = state.value
+        if (currentState.phase == Phase.COMPLETE && !currentState.isSaving && !currentState.isSaved) {
+            isAwaitingSavePermission = true
+            setState { copy(isSaving = true, messageResId = null) }
+            sendEffect(Effect.CheckSavePermission)
+        }
+    }
+
+    private fun handleSavePermission(isGranted: Boolean) {
+        val currentState = state.value
+        if (currentState.isSaving && isAwaitingSavePermission) {
+            isAwaitingSavePermission = false
+            if (isGranted) {
+                savePhoto(currentState)
+            } else {
+                setState { copy(isSaving = false, messageResId = R.string.save_permission_needed) }
+            }
+        }
+    }
+
+    private fun savePhoto(currentState: State) {
+        viewModelScope.launch {
+            try {
+                savePhotoUseCase(frame = currentState.frame, photoFileList = currentState.photoFileList)
+                setState { copy(isSaving = false, isSaved = true, selectedSlotIndex = null) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                setState { copy(isSaving = false, messageResId = R.string.save_photo_failed) }
+            }
         }
     }
 

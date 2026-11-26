@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heesoo.my_camera.R
+import com.heesoo.my_camera.domain.model.PhotoFrame
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
@@ -34,6 +35,8 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
     val state by viewModel.state.collectAsStateWithLifecycle()
     val retakeSlotIndex = state.retakeSlotIndex
 
+    BackHandler(enabled = state.isSaving) {}
+
     BackHandler(enabled = retakeSlotIndex != null) {
         viewModel.sendEvent(Event.ClickCancelRetake)
     }
@@ -43,6 +46,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
             when (effect) {
                 Effect.RequestCameraPermission -> listener.requestCameraPermission()
                 is Effect.TakePhoto -> listener.takePhoto(effect.requestId)
+                Effect.CheckSavePermission -> listener.checkSavePermission()
                 Effect.GoToFrames -> listener.goToFrames()
             }
         }
@@ -56,25 +60,37 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
         ) {
             when {
                 state.phase == Phase.COMPLETE -> {
-                    Text(stringResource(R.string.capture_complete), style = MaterialTheme.typography.headlineMedium)
+                    val title = if (state.isSaved) R.string.save_photo_complete else R.string.capture_complete
+                    Text(stringResource(title), style = MaterialTheme.typography.headlineMedium)
                     CaptureResult(
                         modifier = Modifier.weight(1f, fill = false),
                         frame = state.frame,
                         photoFileList = state.photoFileList,
                         selectedSlotIndex = state.selectedSlotIndex,
-                        isSlotSelectionEnabled = state.retakesRemaining > 0,
+                        isSlotSelectionEnabled = !state.isSaving && !state.isSaved && state.retakesRemaining > 0,
                         onClickSlot = { slotIndex -> viewModel.sendEvent(Event.ClickSlot(slotIndex)) },
                         loadThumbnail = viewModel::loadThumbnail,
                     )
-                    Text(stringResource(R.string.retakes_remaining, state.retakesRemaining))
-                    state.messageResId?.let { messageResId -> Text(stringResource(messageResId)) }
-                    Button(
-                        onClick = { viewModel.sendEvent(Event.ClickStartRetake) },
-                        enabled = state.selectedSlotIndex != null && state.retakesRemaining > 0,
-                    ) {
-                        Text(stringResource(R.string.start_retake))
+                    if (!state.isSaved) {
+                        Text(stringResource(R.string.retakes_remaining, state.retakesRemaining))
+                        state.messageResId?.let { messageResId -> Text(stringResource(messageResId)) }
+                        Button(
+                            onClick = { viewModel.sendEvent(Event.ClickSave) },
+                            enabled = !state.isSaving,
+                        ) {
+                            Text(stringResource(if (state.isSaving) R.string.saving_photo else R.string.save_photo))
+                        }
+                        OutlinedButton(
+                            onClick = { viewModel.sendEvent(Event.ClickStartRetake) },
+                            enabled = !state.isSaving && state.selectedSlotIndex != null && state.retakesRemaining > 0,
+                        ) {
+                            Text(stringResource(R.string.start_retake))
+                        }
                     }
-                    OutlinedButton(onClick = { viewModel.sendEvent(Event.ClickBackToFrames) }) {
+                    OutlinedButton(
+                        onClick = { viewModel.sendEvent(Event.ClickBackToFrames) },
+                        enabled = !state.isSaving,
+                    ) {
                         Text(stringResource(R.string.back_to_frames))
                     }
                 }
@@ -91,7 +107,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                         AndroidView(
                             factory = { listener.preview },
-                            modifier = Modifier.widthIn(max = 560.dp).aspectRatio(4f / 3f),
+                            modifier = Modifier.widthIn(max = 560.dp).aspectRatio(PhotoFrame.SLOT_ASPECT_RATIO),
                         )
                         if (state.phase == Phase.COUNTDOWN) {
                             Surface(

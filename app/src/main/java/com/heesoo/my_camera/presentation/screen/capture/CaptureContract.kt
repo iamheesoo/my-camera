@@ -17,6 +17,8 @@ object CaptureContract {
         val retakeSlotIndex: Int? = null,
         val selectedSlotIndex: Int? = null,
         val retakesRemaining: Int = 1,
+        val isSaving: Boolean = false,
+        val isSaved: Boolean = false,
         val isCameraReady: Boolean = false,
         val secondsRemaining: Int = 0,
         @param:StringRes val messageResId: Int? = null,
@@ -29,6 +31,8 @@ object CaptureContract {
         data object ClickCancelRetake : Event
         data object ClickRetryCapture : Event
         data object ClickBackToFrames : Event
+        data object ClickSave : Event
+        data class SavePermissionResult(val isGranted: Boolean) : Event
         data object CameraUnavailable : Event
         data class CameraReadyChanged(val isReady: Boolean) : Event
         data class CaptureCompleted(val requestId: Long, val photoFile: File?) : Event
@@ -38,5 +42,6 @@ object CaptureContract {
         data object RequestCameraPermission : Effect
         data class TakePhoto(val requestId: Long) : Effect
         data object GoToFrames : Effect
+        data object CheckSavePermission : Effect
     }
 }

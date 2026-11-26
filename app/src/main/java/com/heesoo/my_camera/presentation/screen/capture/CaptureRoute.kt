@@ -2,6 +2,7 @@ package com.heesoo.my_camera.presentation.screen.capture
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
@@ -39,6 +40,11 @@ internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Uni
     ) { isGranted ->
         isCameraPermissionGranted = isGranted
     }
+    val savePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        viewModel.sendEvent(Event.SavePermissionResult(isGranted = isGranted))
+    }
     val previewView = remember(context, isComplete) {
         PreviewView(context).apply { implementationMode = PreviewView.ImplementationMode.COMPATIBLE }
     }
@@ -70,7 +76,7 @@ internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Uni
         }
     }
 
-    val listener = remember(previewView, camera, permissionLauncher, viewModel, onBackToFrames) {
+    val listener = remember(previewView, camera, permissionLauncher, savePermissionLauncher, viewModel, onBackToFrames) {
         object : CaptureListener {
             override val preview = previewView
             override val isPermissionGranted: Boolean
@@ -87,6 +93,17 @@ internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Uni
                             Event.CaptureCompleted(requestId = requestId, photoFile = photoFile),
                         )
                     }
+                }
+            }
+
+            override fun checkSavePermission() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    viewModel.sendEvent(Event.SavePermissionResult(isGranted = true))
+                } else {
+                    savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             }
 

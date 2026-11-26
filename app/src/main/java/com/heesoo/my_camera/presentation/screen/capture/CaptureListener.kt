@@ -10,5 +10,7 @@ internal interface CaptureListener {
 
     fun takePhoto(requestId: Long)
 
+    fun checkSavePermission()
+
     fun goToFrames()
 }
