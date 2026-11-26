@@ -179,6 +179,8 @@ class CaptureViewModelTest {
         thumbnailDecoder = CaptureThumbnailDecoder(ioDispatcher = dispatcher, decoder = CaptureBitmapDecoder()),
         savePhotoUseCase = SavePhotoUseCase(
             repository = object : PhotoRepository {
+                override suspend fun clearStaleCaptures() = Unit
+
                 override suspend fun save(frame: PhotoFrame, photoFileList: List<File>) =
                     onSave(frame, photoFileList)
             },

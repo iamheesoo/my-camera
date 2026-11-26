@@ -10,8 +10,8 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.core.view.doOnLayout
 import androidx.lifecycle.LifecycleOwner
+import com.heesoo.my_camera.data.local.CaptureCache
 import java.io.File
-import java.util.UUID
 
 internal class CameraCaptureSession(
     private val previewView: PreviewView,
@@ -61,7 +61,7 @@ internal class CameraCaptureSession(
     fun takePhoto(onCompleted: (File?) -> Unit) {
         if (cameraProvider != null) {
             val currentBindingId = bindingId
-            val outputFile = File(context.cacheDir, "photobooth-${UUID.randomUUID()}.jpg")
+            val outputFile = CaptureCache.newPhotoFile(cacheDirectory = context.cacheDir)
             previewView.display?.let { imageCapture.targetRotation = it.rotation }
             val metadata = ImageCapture.Metadata().apply { isReversedHorizontal = true }
             val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile)
