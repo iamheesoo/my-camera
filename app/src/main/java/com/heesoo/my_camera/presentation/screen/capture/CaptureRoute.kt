@@ -59,25 +59,28 @@ internal fun CaptureRoute(
         CameraCaptureSession(previewView = previewView, lifecycleOwner = lifecycleOwner)
     }
 
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.sendEvent(Event.CameraStopped)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     DisposableEffect(camera, isCameraPermissionGranted, isComplete) {
         val streamObserver = Observer<StreamState> { streamState ->
             viewModel.sendEvent(Event.CameraReadyChanged(isReady = streamState == StreamState.STREAMING))
         }
-        val lifecycleObserver = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                viewModel.sendEvent(Event.CameraReadyChanged(isReady = false))
-            }
-        }
         if (isCameraPermissionGranted && !isComplete) {
             previewView.previewStreamState.observe(lifecycleOwner, streamObserver)
-            lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
             camera.bind { isAvailable ->
                 if (!isAvailable) viewModel.sendEvent(Event.CameraUnavailable)
             }
         }
         onDispose {
             previewView.previewStreamState.removeObserver(streamObserver)
-            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
             camera.close()
             viewModel.sendEvent(Event.CameraReadyChanged(isReady = false))
         }

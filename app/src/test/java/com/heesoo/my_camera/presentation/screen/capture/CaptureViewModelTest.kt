@@ -80,6 +80,22 @@ class CaptureViewModelTest {
     }
 
     @Test
+    fun stoppingCameraWhileRetakeWaitsPreservesResult() = runTest {
+        val viewModel = completedSession()
+        val originalPhotoList = viewModel.state.value.photoFileList
+        viewModel.sendEvent(Event.ClickSlot(slotIndex = 1))
+        viewModel.sendEvent(Event.ClickStartRetake)
+        assertEquals(Phase.RETAKE_WAITING, viewModel.state.value.phase)
+
+        viewModel.sendEvent(Event.CameraStopped)
+        viewModel.sendEvent(Event.CameraReadyChanged(isReady = true))
+        assertEquals(Phase.COMPLETE, viewModel.state.value.phase)
+        assertEquals(originalPhotoList, viewModel.state.value.photoFileList)
+        assertEquals(1, viewModel.state.value.retakesRemaining)
+        assertNull(withTimeoutOrNull(1) { viewModel.effect.first() })
+    }
+
+    @Test
     fun cancelledRetakeRejectsLateSuccess() = runTest {
         val viewModel = completedSession()
         val originalPhotoList = viewModel.state.value.photoFileList
@@ -179,6 +195,8 @@ class CaptureViewModelTest {
         thumbnailDecoder = CaptureThumbnailDecoder(ioDispatcher = dispatcher, decoder = CaptureBitmapDecoder()),
         savePhotoUseCase = SavePhotoUseCase(
             repository = object : PhotoRepository {
+                override suspend fun clearStaleCaptures() = Unit
+
                 override suspend fun save(frame: PhotoFrame, photoFileList: List<File>) =
                     onSave(frame, photoFileList)
             },

@@ -27,4 +27,14 @@
     <string name="next_guest">다음 게스트</string>
     <string name="change_frame">프레임 변경</string>
     <string name="select_slot_to_retake">다시 찍을 컷을 선택해 주세요</string>
+    <string name="tutorial_title">포토부스 이용 방법</string>
+    <string name="tutorial_capture_title">프레임 선택하고 촬영</string>
+    <string name="tutorial_capture_description">3컷 또는 4컷을 고르면 매 컷 5초 후 자동으로 찍혀요.</string>
+    <string name="tutorial_retake_title">마음에 안 드는 컷 다시 찍기</string>
+    <string name="tutorial_retake_description">촬영이 끝나면 원하는 컷 하나를 골라 한 번 다시 찍을 수 있어요.</string>
+    <string name="tutorial_save_title">갤러리에 저장</string>
+    <string name="tutorial_save_description">프레임 사진을 저장하고 다음 게스트 촬영을 시작해요.</string>
+    <string name="tutorial_start">시작하기</string>
+    <string name="tutorial_completing">저장 중</string>
+    <string name="tutorial_completion_failed">완료 상태를 저장하지 못했어요. 다시 시도해 주세요.</string>
 </resources>

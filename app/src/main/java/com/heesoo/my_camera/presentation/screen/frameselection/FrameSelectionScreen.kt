@@ -1,8 +1,10 @@
 package com.heesoo.my_camera.presentation.screen.frameselection
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -38,41 +42,91 @@ fun FrameSelectionScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(viewModel.effect, listener) {
+    val currentListener by rememberUpdatedState(listener)
+
+    LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is Effect.GoToCapture -> listener.goToCapture(effect.frame)
+                is Effect.GoToCapture -> currentListener.goToCapture(effect.frame)
             }
         }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(R.string.select_frame),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Row(
-                modifier = Modifier.padding(vertical = 24.dp).widthIn(max = 440.dp)
-                    .fillMaxWidth().selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                PhotoFrame.entries.forEach { frame ->
-                    FrameOption(
-                        modifier = Modifier.weight(1f),
-                        frame = frame,
-                        isSelected = frame == state.selectedFrame,
-                        onClick = { viewModel.sendEvent(Event.ClickFrame(frame = frame)) },
-                    )
-                }
-            }
+        val configuration = LocalConfiguration.current
+        val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+        val onClickFrame: (PhotoFrame) -> Unit = { frame ->
+            viewModel.sendEvent(Event.ClickFrame(frame = frame))
+        }
+        val startButton: @Composable () -> Unit = {
             Button(onClick = { viewModel.sendEvent(Event.ClickStartCapture) }) {
                 Text(stringResource(R.string.start_capture))
             }
+        }
+        val title: @Composable () -> Unit = {
+            Text(stringResource(R.string.select_frame), style = MaterialTheme.typography.headlineMedium)
+        }
+
+        if (isLandscape) {
+            Row(
+                modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BoxWithConstraints(
+                    modifier = Modifier.weight(3f).fillMaxHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    FrameOptions(
+                        modifier = Modifier.widthIn(max = minOf(maxWidth, maxHeight * 0.86f)),
+                        selectedFrame = state.selectedFrame,
+                        onClickFrame = onClickFrame,
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(2f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    title()
+                    startButton()
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                title()
+                FrameOptions(
+                    modifier = Modifier.padding(vertical = 24.dp).widthIn(max = 440.dp),
+                    selectedFrame = state.selectedFrame,
+                    onClickFrame = onClickFrame,
+                )
+                startButton()
+            }
+        }
+    }
+}
+
+@Composable
+private fun FrameOptions(
+    modifier: Modifier = Modifier,
+    selectedFrame: PhotoFrame,
+    onClickFrame: (PhotoFrame) -> Unit,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().selectableGroup(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        PhotoFrame.entries.forEach { frame ->
+            FrameOption(
+                modifier = Modifier.weight(1f),
+                frame = frame,
+                isSelected = frame == selectedFrame,
+                onClick = { onClickFrame(frame) },
+            )
         }
     }
 }
