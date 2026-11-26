@@ -80,7 +80,8 @@ internal class CaptureViewModel(
         }
     }
 
-    suspend fun loadThumbnail(photoFile: File): Bitmap? = thumbnailDecoder.decode(photoFile)
+    suspend fun loadThumbnail(photoFile: File, slotWidthPx: Int, slotHeightPx: Int): Bitmap? =
+        thumbnailDecoder.decode(photoFile = photoFile, slotWidthPx = slotWidthPx, slotHeightPx = slotHeightPx)
 
     fun isActiveRequest(requestId: Long): Boolean = activeRequestId == requestId
 
@@ -109,7 +110,7 @@ internal class CaptureViewModel(
             currentState.retakesRemaining > 0 &&
             slotIndex in currentState.photoFileList.indices
         ) {
-            setState { copy(selectedSlotIndex = slotIndex) }
+            setState { copy(selectedSlotIndex = slotIndex.takeUnless { it == selectedSlotIndex }) }
         }
     }
 
@@ -119,17 +120,19 @@ internal class CaptureViewModel(
         if (currentState.phase == Phase.COMPLETE &&
             !currentState.isSaving &&
             !currentState.isSaved &&
-            currentState.retakesRemaining > 0 &&
-            slotIndex != null &&
-            slotIndex in currentState.photoFileList.indices
+            currentState.retakesRemaining > 0
         ) {
-            setState {
-                copy(
-                    phase = Phase.RETAKE_WAITING,
-                    retakeSlotIndex = slotIndex,
-                    isCameraReady = false,
-                    messageResId = null,
-                )
+            if (slotIndex != null && slotIndex in currentState.photoFileList.indices) {
+                setState {
+                    copy(
+                        phase = Phase.RETAKE_WAITING,
+                        retakeSlotIndex = slotIndex,
+                        isCameraReady = false,
+                        messageResId = null,
+                    )
+                }
+            } else {
+                sendEffect(Effect.ShowToast(messageResId = R.string.select_slot_to_retake))
             }
         }
     }

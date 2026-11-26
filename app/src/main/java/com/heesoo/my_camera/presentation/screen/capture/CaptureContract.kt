@@ -45,5 +45,6 @@ object CaptureContract {
         data class GoToNextGuest(val frame: PhotoFrame) : Effect
         data object CheckSavePermission : Effect
         data object ShowCaptureFlash : Effect
+        data class ShowToast(@param:StringRes val messageResId: Int) : Effect
     }
 }

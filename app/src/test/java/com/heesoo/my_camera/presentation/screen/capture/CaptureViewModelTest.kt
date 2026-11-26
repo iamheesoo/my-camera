@@ -49,6 +49,22 @@ class CaptureViewModelTest {
     }
 
     @Test
+    fun tappingSelectedSlotClearsSelectionAndRetakeShowsHint() = runTest {
+        val viewModel = completedSession()
+
+        viewModel.sendEvent(Event.ClickSlot(slotIndex = 0))
+        viewModel.sendEvent(Event.ClickSlot(slotIndex = 1))
+        assertEquals(1, viewModel.state.value.selectedSlotIndex)
+        viewModel.sendEvent(Event.ClickSlot(slotIndex = 1))
+        assertNull(viewModel.state.value.selectedSlotIndex)
+
+        viewModel.sendEvent(Event.ClickStartRetake)
+        assertEquals(Effect.ShowToast(messageResId = R.string.select_slot_to_retake), viewModel.effect.first())
+        assertEquals(Phase.COMPLETE, viewModel.state.value.phase)
+        assertEquals(1, viewModel.state.value.retakesRemaining)
+    }
+
+    @Test
     fun failedRetakePreservesPhotosAndBudget() = runTest {
         val viewModel = completedSession()
         val originalPhotoList = viewModel.state.value.photoFileList

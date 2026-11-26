@@ -13,15 +13,19 @@ internal class CaptureThumbnailDecoder @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val decoder: CaptureBitmapDecoder,
 ) {
-    suspend fun decode(photoFile: File): Bitmap? = withContext(ioDispatcher) {
+    suspend fun decode(photoFile: File, slotWidthPx: Int, slotHeightPx: Int): Bitmap? = withContext(ioDispatcher) {
         try {
-            decoder.decode(photoFile = photoFile, targetLongestSide = THUMBNAIL_MAX_SIDE)
+            decoder.decode(
+                photoFile = photoFile,
+                targetLongestSide = maxOf(slotWidthPx, PREVIEW_MIN_LONGEST_SIDE),
+                targetShortestSide = slotHeightPx,
+            )
         } catch (_: IOException) {
             null
         }
     }
 
     private companion object {
-        const val THUMBNAIL_MAX_SIDE = 512
+        const val PREVIEW_MIN_LONGEST_SIDE = 960
     }
 }

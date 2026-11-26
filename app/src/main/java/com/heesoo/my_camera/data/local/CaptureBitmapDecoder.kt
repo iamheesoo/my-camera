@@ -8,13 +8,20 @@ import java.io.File
 import javax.inject.Inject
 
 internal class CaptureBitmapDecoder @Inject constructor() {
-    fun decode(photoFile: File, targetLongestSide: Int): Bitmap? {
+    fun decode(
+        photoFile: File,
+        targetLongestSide: Int,
+        targetShortestSide: Int = 1,
+    ): Bitmap? {
         val exif = ExifInterface(photoFile)
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(photoFile.path, options)
         val longestSide = maxOf(options.outWidth, options.outHeight)
+        val shortestSide = minOf(options.outWidth, options.outHeight)
         var sampleSize = 1
-        while (longestSide / (sampleSize * 2) >= targetLongestSide) {
+        while (longestSide / (sampleSize * 2) >= targetLongestSide &&
+            shortestSide / (sampleSize * 2) >= targetShortestSide
+        ) {
             sampleSize *= 2
         }
 

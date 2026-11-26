@@ -1,5 +1,6 @@
 package com.heesoo.my_camera.presentation.screen.capture
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -45,6 +47,7 @@ private const val FLASH_FADE_MILLIS = 180
 @Composable
 internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val retakeSlotIndex = state.retakeSlotIndex
     val flashAlpha = remember { Animatable(0f) }
 
@@ -54,13 +57,14 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
         viewModel.sendEvent(Event.ClickCancelRetake)
     }
 
-    LaunchedEffect(viewModel.effect, listener) {
+    LaunchedEffect(viewModel.effect, listener, context) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 Effect.RequestCameraPermission -> listener.requestCameraPermission()
                 is Effect.TakePhoto -> listener.takePhoto(effect.requestId)
                 Effect.CheckSavePermission -> listener.checkSavePermission()
                 is Effect.GoToNextGuest -> listener.goToNextGuest(effect.frame)
+                is Effect.ShowToast -> Toast.makeText(context, effect.messageResId, Toast.LENGTH_SHORT).show()
                 Effect.ShowCaptureFlash -> launch {
                     flashAlpha.snapTo(FLASH_PEAK_ALPHA)
                     delay(FLASH_HOLD_MILLIS)
@@ -113,7 +117,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                         }
                         OutlinedButton(
                             onClick = { viewModel.sendEvent(Event.ClickStartRetake) },
-                            enabled = !state.isSaving && state.selectedSlotIndex != null && state.retakesRemaining > 0,
+                            enabled = !state.isSaving && state.retakesRemaining > 0,
                         ) {
                             Text(stringResource(R.string.start_retake))
                         }
