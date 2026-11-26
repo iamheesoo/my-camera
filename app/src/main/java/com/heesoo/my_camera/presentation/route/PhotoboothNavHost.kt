@@ -11,10 +11,22 @@ import com.heesoo.my_camera.presentation.screen.capture.CaptureListener
 import com.heesoo.my_camera.presentation.screen.capture.CaptureRoute
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionListener
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionScreen
+import com.heesoo.my_camera.presentation.screen.tutorial.TutorialListener
+import com.heesoo.my_camera.presentation.screen.tutorial.TutorialScreen
 
 @Composable
 fun PhotoboothNavHost() {
     val navController = rememberNavController()
+    val tutorialListener = remember(navController) {
+        object : TutorialListener {
+            override fun goToFrameSelection() {
+                navController.navigate(Route.FrameSelection) {
+                    popUpTo<Route.Tutorial> { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
     val frameSelectionListener = remember(navController) {
         object : FrameSelectionListener {
             override fun goToCapture(frame: PhotoFrame) {
@@ -37,7 +49,10 @@ fun PhotoboothNavHost() {
             }
         }
     }
-    NavHost(navController = navController, startDestination = Route.FrameSelection) {
+    NavHost(navController = navController, startDestination = Route.Tutorial) {
+        composable<Route.Tutorial> {
+            TutorialScreen(viewModel = hiltViewModel(), listener = tutorialListener)
+        }
         composable<Route.FrameSelection> {
             FrameSelectionScreen(viewModel = hiltViewModel(), listener = frameSelectionListener)
         }
