@@ -16,4 +16,7 @@
     <string name="back_to_frames">프레임 선택으로</string>
     <string name="captured_slot">%1$d번 사진</string>
     <string name="retakes_remaining">재촬영 %1$d회 남음</string>
+    <string name="start_retake">이 컷 다시 찍기</string>
+    <string name="retake_progress">%1$d번 사진 재촬영</string>
+    <string name="cancel_retake">재촬영 취소</string>
 </resources>

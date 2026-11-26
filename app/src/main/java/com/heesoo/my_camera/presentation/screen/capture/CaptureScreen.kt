@@ -1,5 +1,6 @@
 package com.heesoo.my_camera.presentation.screen.capture
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +32,11 @@ import com.heesoo.my_camera.presentation.screen.capture.composable.CaptureResult
 @Composable
 internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val retakeSlotIndex = state.retakeSlotIndex
+
+    BackHandler(enabled = retakeSlotIndex != null) {
+        viewModel.sendEvent(Event.ClickCancelRetake)
+    }
 
     LaunchedEffect(viewModel.effect, listener) {
         viewModel.effect.collect { effect ->
@@ -60,14 +67,25 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                         loadThumbnail = viewModel::loadThumbnail,
                     )
                     Text(stringResource(R.string.retakes_remaining, state.retakesRemaining))
-                    Button(onClick = { viewModel.sendEvent(Event.ClickBackToFrames) }) {
+                    state.messageResId?.let { messageResId -> Text(stringResource(messageResId)) }
+                    Button(
+                        onClick = { viewModel.sendEvent(Event.ClickStartRetake) },
+                        enabled = state.selectedSlotIndex != null && state.retakesRemaining > 0,
+                    ) {
+                        Text(stringResource(R.string.start_retake))
+                    }
+                    OutlinedButton(onClick = { viewModel.sendEvent(Event.ClickBackToFrames) }) {
                         Text(stringResource(R.string.back_to_frames))
                     }
                 }
                 listener.isPermissionGranted -> {
-                    val currentSlot = state.photoFileList.size + 1
+                    val progress = if (retakeSlotIndex != null) {
+                        stringResource(R.string.retake_progress, retakeSlotIndex + 1)
+                    } else {
+                        stringResource(R.string.capture_progress, state.photoFileList.size + 1, state.frame.slotCount)
+                    }
                     Text(
-                        text = stringResource(R.string.capture_progress, currentSlot, state.frame.slotCount),
+                        text = progress,
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -100,6 +118,12 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                     Button(onClick = { viewModel.sendEvent(Event.ClickAllowCamera) }) {
                         Text(stringResource(R.string.allow_camera))
                     }
+                }
+            }
+
+            if (retakeSlotIndex != null) {
+                OutlinedButton(onClick = { viewModel.sendEvent(Event.ClickCancelRetake) }) {
+                    Text(stringResource(R.string.cancel_retake))
                 }
             }
         }

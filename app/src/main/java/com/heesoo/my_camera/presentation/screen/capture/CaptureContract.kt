@@ -8,12 +8,13 @@ import com.heesoo.my_camera.domain.model.PhotoFrame
 import java.io.File
 
 object CaptureContract {
-    enum class Phase { WAITING, COUNTDOWN, TAKING_PHOTO, PAUSED, COMPLETE }
+    enum class Phase { WAITING, COUNTDOWN, TAKING_PHOTO, PAUSED, COMPLETE, RETAKE_WAITING }
 
     data class State(
         val frame: PhotoFrame,
         val photoFileList: List<File> = emptyList(),
         val phase: Phase = Phase.WAITING,
+        val retakeSlotIndex: Int? = null,
         val selectedSlotIndex: Int? = null,
         val retakesRemaining: Int = 1,
         val isCameraReady: Boolean = false,
@@ -24,6 +25,8 @@ object CaptureContract {
     sealed interface Event : UiEvent {
         data object ClickAllowCamera : Event
         data class ClickSlot(val slotIndex: Int) : Event
+        data object ClickStartRetake : Event
+        data object ClickCancelRetake : Event
         data object ClickRetryCapture : Event
         data object ClickBackToFrames : Event
         data object CameraUnavailable : Event

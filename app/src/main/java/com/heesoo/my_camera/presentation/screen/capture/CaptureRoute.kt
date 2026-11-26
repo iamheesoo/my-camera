@@ -39,7 +39,7 @@ internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Uni
     ) { isGranted ->
         isCameraPermissionGranted = isGranted
     }
-    val previewView = remember(context) {
+    val previewView = remember(context, isComplete) {
         PreviewView(context).apply { implementationMode = PreviewView.ImplementationMode.COMPATIBLE }
     }
     val camera = remember(previewView, lifecycleOwner) {

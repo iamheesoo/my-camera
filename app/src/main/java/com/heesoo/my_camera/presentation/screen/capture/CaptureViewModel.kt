@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import com.heesoo.my_camera.R
 import com.heesoo.my_camera.core.mvi.BaseMviViewModel
+import com.heesoo.my_camera.domain.model.PhotoFrame
 import com.heesoo.my_camera.presentation.route.Route
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Effect
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
@@ -19,13 +20,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-internal class CaptureViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+internal class CaptureViewModel(
+    frame: PhotoFrame,
     private val thumbnailDecoder: CaptureThumbnailDecoder,
-) :
-    BaseMviViewModel<State, Event, Effect>(
-        initialState = State(frame = savedStateHandle.toRoute<Route.Capture>().frame),
-    ) {
+) : BaseMviViewModel<State, Event, Effect>(initialState = State(frame = frame)) {
+
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        thumbnailDecoder: CaptureThumbnailDecoder,
+    ) : this(
+        frame = savedStateHandle.toRoute<Route.Capture>().frame,
+        thumbnailDecoder = thumbnailDecoder,
+    )
+
     private var countdownJob: Job? = null
     private var nextRequestId = 0L
     private var activeRequestId: Long? = null
@@ -34,6 +42,8 @@ internal class CaptureViewModel @Inject constructor(
         when (event) {
             Event.ClickAllowCamera -> sendEffect(Effect.RequestCameraPermission)
             is Event.ClickSlot -> selectSlot(event.slotIndex)
+            Event.ClickStartRetake -> startRetake()
+            Event.ClickCancelRetake -> cancelRetake()
             Event.ClickRetryCapture -> retryCapture()
             Event.ClickBackToFrames -> sendEffect(Effect.GoToFrames)
             Event.CameraUnavailable -> showCameraUnavailable()
@@ -49,16 +59,18 @@ internal class CaptureViewModel @Inject constructor(
     private fun updateCameraReadiness(isReady: Boolean) {
         setState { copy(isCameraReady = isReady) }
         val phase = state.value.phase
-        if (isReady && phase == Phase.WAITING) {
+        if (isReady && (phase == Phase.WAITING || phase == Phase.RETAKE_WAITING)) {
             startCountdown()
         } else if (!isReady && (phase == Phase.COUNTDOWN || phase == Phase.TAKING_PHOTO)) {
-            pauseCapture(R.string.capture_interrupted)
+            handleCaptureFailure(R.string.capture_interrupted)
         }
     }
 
     private fun showCameraUnavailable() {
         setState { copy(isCameraReady = false) }
-        pauseCapture(R.string.camera_unavailable)
+        if (state.value.phase != Phase.COMPLETE) {
+            handleCaptureFailure(R.string.camera_unavailable)
+        }
     }
 
     private fun selectSlot(slotIndex: Int) {
@@ -68,6 +80,31 @@ internal class CaptureViewModel @Inject constructor(
             slotIndex in currentState.photoFileList.indices
         ) {
             setState { copy(selectedSlotIndex = slotIndex) }
+        }
+    }
+
+    private fun startRetake() {
+        val currentState = state.value
+        val slotIndex = currentState.selectedSlotIndex
+        if (currentState.phase == Phase.COMPLETE &&
+            currentState.retakesRemaining > 0 &&
+            slotIndex != null &&
+            slotIndex in currentState.photoFileList.indices
+        ) {
+            setState {
+                copy(
+                    phase = Phase.RETAKE_WAITING,
+                    retakeSlotIndex = slotIndex,
+                    isCameraReady = false,
+                    messageResId = null,
+                )
+            }
+        }
+    }
+
+    private fun cancelRetake() {
+        if (state.value.retakeSlotIndex != null) {
+            returnToResult()
         }
     }
 
@@ -96,10 +133,11 @@ internal class CaptureViewModel @Inject constructor(
         val photoFile = event.photoFile
         if (event.requestId == activeRequestId) {
             activeRequestId = null
-            if (photoFile != null) {
-                appendPhoto(photoFile)
-            } else {
-                pauseCapture(R.string.capture_failed)
+            val retakeSlotIndex = state.value.retakeSlotIndex
+            when {
+                photoFile == null -> handleCaptureFailure(R.string.capture_failed)
+                retakeSlotIndex != null -> replacePhoto(slotIndex = retakeSlotIndex, photoFile = photoFile)
+                else -> appendPhoto(photoFile)
             }
         } else {
             photoFile?.delete()
@@ -116,10 +154,47 @@ internal class CaptureViewModel @Inject constructor(
         }
     }
 
-    private fun pauseCapture(messageResId: Int) {
+    private fun replacePhoto(slotIndex: Int, photoFile: File) {
+        val previousPhoto = state.value.photoFileList[slotIndex]
+        setState {
+            val updatedPhotoFileList = photoFileList.toMutableList().apply { this[slotIndex] = photoFile }
+            copy(
+                photoFileList = updatedPhotoFileList,
+                phase = Phase.COMPLETE,
+                retakeSlotIndex = null,
+                selectedSlotIndex = null,
+                retakesRemaining = retakesRemaining - 1,
+                isCameraReady = false,
+            )
+        }
+        previousPhoto.delete()
+    }
+
+    private fun handleCaptureFailure(messageResId: Int) {
+        if (state.value.retakeSlotIndex != null) {
+            returnToResult(messageResId)
+        } else {
+            cancelPendingCapture()
+            setState { copy(phase = Phase.PAUSED, secondsRemaining = 0, messageResId = messageResId) }
+        }
+    }
+
+    private fun returnToResult(messageResId: Int? = null) {
+        cancelPendingCapture()
+        setState {
+            copy(
+                phase = Phase.COMPLETE,
+                retakeSlotIndex = null,
+                isCameraReady = false,
+                secondsRemaining = 0,
+                messageResId = messageResId,
+            )
+        }
+    }
+
+    private fun cancelPendingCapture() {
         countdownJob?.cancel()
         activeRequestId = null
-        setState { copy(phase = Phase.PAUSED, secondsRemaining = 0, messageResId = messageResId) }
     }
 
     override fun onCleared() {
