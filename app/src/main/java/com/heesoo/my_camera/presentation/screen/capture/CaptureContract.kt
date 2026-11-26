@@ -12,16 +12,16 @@ object CaptureContract {
 
     data class State(
         val frame: PhotoFrame,
-        val photoFileList: List<File> = emptyList(),
-        val phase: Phase = Phase.WAITING,
-        val retakeSlotIndex: Int? = null,
-        val selectedSlotIndex: Int? = null,
-        val retakesRemaining: Int = 1,
-        val isSaving: Boolean = false,
-        val isSaved: Boolean = false,
-        val isCameraReady: Boolean = false,
-        val secondsRemaining: Int = 0,
-        @param:StringRes val messageResId: Int? = null,
+        val photoFileList: List<File>,
+        val phase: Phase,
+        val retakeSlotIndex: Int?,
+        val selectedSlotIndex: Int?,
+        val retakesRemaining: Int,
+        val isSaving: Boolean,
+        val isSaved: Boolean,
+        val isCameraReady: Boolean,
+        val secondsRemaining: Int,
+        @param:StringRes val messageResId: Int?,
     ) : UiState
 
     sealed interface Event : UiEvent {

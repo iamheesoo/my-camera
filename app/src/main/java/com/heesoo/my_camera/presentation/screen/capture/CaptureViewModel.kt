@@ -26,7 +26,21 @@ internal class CaptureViewModel(
     frame: PhotoFrame,
     private val thumbnailDecoder: CaptureThumbnailDecoder,
     private val savePhotoUseCase: SavePhotoUseCase,
-) : BaseMviViewModel<State, Event, Effect>(initialState = State(frame = frame)) {
+) : BaseMviViewModel<State, Event, Effect>(
+    initialState = State(
+        frame = frame,
+        photoFileList = emptyList(),
+        phase = Phase.WAITING,
+        retakeSlotIndex = null,
+        selectedSlotIndex = null,
+        retakesRemaining = 1,
+        isSaving = false,
+        isSaved = false,
+        isCameraReady = false,
+        secondsRemaining = 0,
+        messageResId = null,
+    ),
+) {
 
     @Inject
     constructor(

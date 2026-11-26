@@ -10,7 +10,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FrameSelectionViewModel @Inject constructor() :
-    BaseMviViewModel<State, Event, Effect>(initialState = State()) {
+    BaseMviViewModel<State, Event, Effect>(initialState = State(selectedFrame = PhotoFrame.STRIP)) {
 
     override fun handleEvent(event: Event) {
         when (event) {

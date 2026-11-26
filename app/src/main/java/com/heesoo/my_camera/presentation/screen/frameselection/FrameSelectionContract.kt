@@ -7,7 +7,7 @@ import com.heesoo.my_camera.core.mvi.UiState
 import com.heesoo.my_camera.domain.model.PhotoFrame
 
 object FrameSelectionContract {
-    data class State(val selectedFrame: PhotoFrame = PhotoFrame.STRIP) : UiState
+    data class State(val selectedFrame: PhotoFrame) : UiState
 
     sealed interface Event : UiEvent {
         data class ClickFrame(val frame: PhotoFrame) : Event
