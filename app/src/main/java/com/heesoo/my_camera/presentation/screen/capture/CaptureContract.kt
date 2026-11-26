@@ -31,6 +31,7 @@ object CaptureContract {
         data object ClickCancelRetake : Event
         data object ClickRetryCapture : Event
         data object ClickBackToFrames : Event
+        data object ClickNextGuest : Event
         data object ClickSave : Event
         data class SavePermissionResult(val isGranted: Boolean) : Event
         data object CameraUnavailable : Event
@@ -42,6 +43,7 @@ object CaptureContract {
         data object RequestCameraPermission : Effect
         data class TakePhoto(val requestId: Long) : Effect
         data object GoToFrames : Effect
+        data class GoToNextGuest(val frame: PhotoFrame) : Effect
         data object CheckSavePermission : Effect
     }
 }

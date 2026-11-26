@@ -31,6 +31,11 @@ fun PhotoboothNavHost() {
             CaptureRoute(
                 viewModel = hiltViewModel(),
                 onBackToFrames = { navController.popBackStack() },
+                onNextGuest = { frame ->
+                    navController.navigate(Route.Capture(frame = frame)) {
+                        popUpTo<Route.Capture> { inclusive = true }
+                    }
+                },
             )
         }
     }

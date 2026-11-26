@@ -43,6 +43,7 @@ internal class CaptureViewModel(
     private var nextRequestId = 0L
     private var activeRequestId: Long? = null
     private var isAwaitingSavePermission = false
+    private var isLeavingResult = false
 
     override fun handleEvent(event: Event) {
         when (event) {
@@ -52,6 +53,7 @@ internal class CaptureViewModel(
             Event.ClickCancelRetake -> cancelRetake()
             Event.ClickRetryCapture -> retryCapture()
             Event.ClickBackToFrames -> goToFrames()
+            Event.ClickNextGuest -> goToNextGuest()
             Event.ClickSave -> requestSave()
             is Event.SavePermissionResult -> handleSavePermission(event.isGranted)
             Event.CameraUnavailable -> showCameraUnavailable()
@@ -121,8 +123,17 @@ internal class CaptureViewModel(
     }
 
     private fun goToFrames() {
-        if (!state.value.isSaving) {
+        if (!state.value.isSaving && !isLeavingResult) {
+            isLeavingResult = true
             sendEffect(Effect.GoToFrames)
+        }
+    }
+
+    private fun goToNextGuest() {
+        val currentState = state.value
+        if (currentState.isSaved && !isLeavingResult) {
+            isLeavingResult = true
+            sendEffect(Effect.GoToNextGuest(frame = currentState.frame))
         }
     }
 

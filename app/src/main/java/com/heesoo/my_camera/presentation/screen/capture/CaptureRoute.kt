@@ -21,10 +21,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.heesoo.my_camera.domain.model.PhotoFrame
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 
 @Composable
-internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Unit) {
+internal fun CaptureRoute(
+    viewModel: CaptureViewModel,
+    onBackToFrames: () -> Unit,
+    onNextGuest: (PhotoFrame) -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isComplete = state.phase == Phase.COMPLETE
     val context = LocalContext.current
@@ -76,7 +81,9 @@ internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Uni
         }
     }
 
-    val listener = remember(previewView, camera, permissionLauncher, savePermissionLauncher, viewModel, onBackToFrames) {
+    val listener = remember(
+        previewView, camera, permissionLauncher, savePermissionLauncher, viewModel, onBackToFrames, onNextGuest,
+    ) {
         object : CaptureListener {
             override val preview = previewView
             override val isPermissionGranted: Boolean
@@ -106,6 +113,8 @@ internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Uni
                     savePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             }
+
+            override fun goToNextGuest(frame: PhotoFrame) = onNextGuest(frame)
 
             override fun goToFrames() = onBackToFrames()
         }

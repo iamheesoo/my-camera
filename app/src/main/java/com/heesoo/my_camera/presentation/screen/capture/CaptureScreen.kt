@@ -47,6 +47,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                 Effect.RequestCameraPermission -> listener.requestCameraPermission()
                 is Effect.TakePhoto -> listener.takePhoto(effect.requestId)
                 Effect.CheckSavePermission -> listener.checkSavePermission()
+                is Effect.GoToNextGuest -> listener.goToNextGuest(effect.frame)
                 Effect.GoToFrames -> listener.goToFrames()
             }
         }
@@ -71,7 +72,11 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                         onClickSlot = { slotIndex -> viewModel.sendEvent(Event.ClickSlot(slotIndex)) },
                         loadThumbnail = viewModel::loadThumbnail,
                     )
-                    if (!state.isSaved) {
+                    if (state.isSaved) {
+                        Button(onClick = { viewModel.sendEvent(Event.ClickNextGuest) }) {
+                            Text(stringResource(R.string.next_guest))
+                        }
+                    } else {
                         Text(stringResource(R.string.retakes_remaining, state.retakesRemaining))
                         state.messageResId?.let { messageResId -> Text(stringResource(messageResId)) }
                         Button(
@@ -91,7 +96,7 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                         onClick = { viewModel.sendEvent(Event.ClickBackToFrames) },
                         enabled = !state.isSaving,
                     ) {
-                        Text(stringResource(R.string.back_to_frames))
+                        Text(stringResource(if (state.isSaved) R.string.change_frame else R.string.back_to_frames))
                     }
                 }
                 listener.isPermissionGranted -> {

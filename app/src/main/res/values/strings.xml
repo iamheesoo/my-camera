@@ -24,4 +24,6 @@
     <string name="save_photo_complete">갤러리 저장 완료</string>
     <string name="save_photo_failed">저장에 실패했어요. 다시 시도해 주세요.</string>
     <string name="save_permission_needed">갤러리에 저장하려면 저장공간 권한이 필요해요.</string>
+    <string name="next_guest">다음 게스트</string>
+    <string name="change_frame">프레임 변경</string>
 </resources>
