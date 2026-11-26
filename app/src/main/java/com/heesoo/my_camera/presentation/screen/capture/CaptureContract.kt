@@ -34,6 +34,7 @@ object CaptureContract {
         data object ClickSave : Event
         data class SavePermissionResult(val isGranted: Boolean) : Event
         data object CameraUnavailable : Event
+        data object CameraStopped : Event
         data class CameraReadyChanged(val isReady: Boolean) : Event
         data class CaptureCompleted(val requestId: Long, val photoFile: File?) : Event
     }

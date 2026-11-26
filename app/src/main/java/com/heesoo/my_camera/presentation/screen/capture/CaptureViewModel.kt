@@ -75,6 +75,7 @@ internal class CaptureViewModel(
             Event.ClickSave -> requestSave()
             is Event.SavePermissionResult -> handleSavePermission(event.isGranted)
             Event.CameraUnavailable -> showCameraUnavailable()
+            Event.CameraStopped -> stopCamera()
             is Event.CameraReadyChanged -> updateCameraReadiness(event.isReady)
             is Event.CaptureCompleted -> completeCapture(event)
         }
@@ -92,6 +93,14 @@ internal class CaptureViewModel(
             startCountdown()
         } else if (!isReady && (phase == Phase.COUNTDOWN || phase == Phase.TAKING_PHOTO)) {
             handleCaptureFailure(R.string.capture_interrupted)
+        }
+    }
+
+    private fun stopCamera() {
+        if (state.value.retakeSlotIndex != null) {
+            returnToResult(R.string.capture_interrupted)
+        } else {
+            updateCameraReadiness(isReady = false)
         }
     }
 
