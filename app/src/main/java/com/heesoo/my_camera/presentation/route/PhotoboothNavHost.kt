@@ -6,6 +6,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.heesoo.my_camera.presentation.screen.capture.CaptureRoute
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionListener
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionScreen
 
@@ -25,6 +26,8 @@ fun PhotoboothNavHost() {
         composable<Route.FrameSelection> {
             FrameSelectionScreen(viewModel = hiltViewModel(), listener = frameSelectionListener)
         }
-        composable<Route.Capture> {}
+        composable<Route.Capture> {
+            CaptureRoute(viewModel = hiltViewModel())
+        }
     }
 }
