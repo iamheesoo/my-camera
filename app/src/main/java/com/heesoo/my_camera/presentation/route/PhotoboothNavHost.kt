@@ -28,7 +28,10 @@ fun PhotoboothNavHost() {
             FrameSelectionScreen(viewModel = hiltViewModel(), listener = frameSelectionListener)
         }
         composable<Route.Capture> {
-            CaptureRoute(viewModel = hiltViewModel())
+            CaptureRoute(
+                viewModel = hiltViewModel(),
+                onBackToFrames = { navController.popBackStack() },
+            )
         }
     }
 }

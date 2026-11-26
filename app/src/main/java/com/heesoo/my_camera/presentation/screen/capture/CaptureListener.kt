@@ -8,5 +8,7 @@ internal interface CaptureListener {
 
     fun requestCameraPermission()
 
-    fun takePhoto()
+    fun takePhoto(requestId: Long)
+
+    fun goToFrames()
 }

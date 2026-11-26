@@ -4,23 +4,33 @@ import androidx.annotation.StringRes
 import com.heesoo.my_camera.core.mvi.UiEffect
 import com.heesoo.my_camera.core.mvi.UiEvent
 import com.heesoo.my_camera.core.mvi.UiState
+import com.heesoo.my_camera.domain.model.PhotoFrame
+import java.io.File
 
 object CaptureContract {
+    enum class Phase { WAITING, COUNTDOWN, TAKING_PHOTO, PAUSED, COMPLETE }
+
     data class State(
+        val frame: PhotoFrame,
+        val photoFileList: List<File> = emptyList(),
+        val phase: Phase = Phase.WAITING,
         val isCameraReady: Boolean = false,
-        val isCapturing: Boolean = false,
+        val secondsRemaining: Int = 0,
         @param:StringRes val messageResId: Int? = null,
     ) : UiState
 
     sealed interface Event : UiEvent {
         data object ClickAllowCamera : Event
-        data object ClickTakePhoto : Event
-        data class CameraAvailabilityChanged(val isAvailable: Boolean) : Event
-        data class CaptureCompleted(val isSuccessful: Boolean) : Event
+        data object ClickRetryCapture : Event
+        data object ClickBackToFrames : Event
+        data object CameraUnavailable : Event
+        data class CameraReadyChanged(val isReady: Boolean) : Event
+        data class CaptureCompleted(val requestId: Long, val photoFile: File?) : Event
     }
 
     sealed interface Effect : UiEffect {
         data object RequestCameraPermission : Effect
-        data object TakePhoto : Effect
+        data class TakePhoto(val requestId: Long) : Effect
+        data object GoToFrames : Effect
     }
 }

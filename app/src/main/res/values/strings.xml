@@ -4,10 +4,14 @@
     <string name="allow_camera">카메라 권한 허용</string>
     <string name="camera_permission_needed">촬영하려면 카메라 권한이 필요해요.</string>
     <string name="camera_unavailable">전면 카메라를 열 수 없어요.</string>
-    <string name="take_test_photo">테스트 촬영</string>
-    <string name="test_photo_saved">테스트 JPEG 저장 완료</string>
-    <string name="test_photo_failed">촬영에 실패했어요. 다시 시도해 주세요.</string>
     <string name="select_frame">프레임 선택</string>
     <string name="frame_strip">3컷 세로형</string>
     <string name="frame_grid">4컷 그리드</string>
+    <string name="capture_progress">%1$d / %2$d</string>
+    <string name="capture_countdown">%1$d</string>
+    <string name="capture_failed">촬영에 실패했어요.</string>
+    <string name="capture_interrupted">촬영을 일시 중지했어요.</string>
+    <string name="retry_current_slot">이 컷 다시 시작</string>
+    <string name="capture_complete">촬영 완료</string>
+    <string name="back_to_frames">프레임 선택으로</string>
 </resources>

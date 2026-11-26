@@ -5,6 +5,12 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
+import androidx.camera.view.PreviewView.StreamState
+import androidx.lifecycle.Observer
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Phase
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -17,7 +23,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.heesoo.my_camera.presentation.screen.capture.CaptureContract.Event
 
 @Composable
-internal fun CaptureRoute(viewModel: CaptureViewModel) {
+internal fun CaptureRoute(viewModel: CaptureViewModel, onBackToFrames: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val isComplete = state.phase == Phase.COMPLETE
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var isCameraPermissionGranted by remember(context) {
@@ -31,21 +39,38 @@ internal fun CaptureRoute(viewModel: CaptureViewModel) {
     ) { isGranted ->
         isCameraPermissionGranted = isGranted
     }
-    val previewView = remember(context) { PreviewView(context) }
+    val previewView = remember(context) {
+        PreviewView(context).apply { implementationMode = PreviewView.ImplementationMode.COMPATIBLE }
+    }
     val camera = remember(previewView, lifecycleOwner) {
-        TestCameraSession(previewView = previewView, lifecycleOwner = lifecycleOwner)
+        CameraCaptureSession(previewView = previewView, lifecycleOwner = lifecycleOwner)
     }
 
-    DisposableEffect(camera, isCameraPermissionGranted) {
-        if (isCameraPermissionGranted) {
-            camera.bind { isAvailable ->
-                viewModel.sendEvent(Event.CameraAvailabilityChanged(isAvailable))
+    DisposableEffect(camera, isCameraPermissionGranted, isComplete) {
+        val streamObserver = Observer<StreamState> { streamState ->
+            viewModel.sendEvent(Event.CameraReadyChanged(isReady = streamState == StreamState.STREAMING))
+        }
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                viewModel.sendEvent(Event.CameraReadyChanged(isReady = false))
             }
         }
-        onDispose { camera.close() }
+        if (isCameraPermissionGranted && !isComplete) {
+            previewView.previewStreamState.observe(lifecycleOwner, streamObserver)
+            lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+            camera.bind { isAvailable ->
+                if (!isAvailable) viewModel.sendEvent(Event.CameraUnavailable)
+            }
+        }
+        onDispose {
+            previewView.previewStreamState.removeObserver(streamObserver)
+            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
+            camera.close()
+            viewModel.sendEvent(Event.CameraReadyChanged(isReady = false))
+        }
     }
 
-    val listener = remember(previewView, camera, permissionLauncher, viewModel) {
+    val listener = remember(previewView, camera, permissionLauncher, viewModel, onBackToFrames) {
         object : CaptureListener {
             override val preview = previewView
             override val isPermissionGranted: Boolean
@@ -55,11 +80,17 @@ internal fun CaptureRoute(viewModel: CaptureViewModel) {
                 permissionLauncher.launch(Manifest.permission.CAMERA)
             }
 
-            override fun takePhoto() {
-                camera.takePhoto { isSuccessful ->
-                    viewModel.sendEvent(Event.CaptureCompleted(isSuccessful))
+            override fun takePhoto(requestId: Long) {
+                if (viewModel.isActiveRequest(requestId)) {
+                    camera.takePhoto { photoFile ->
+                        viewModel.sendEvent(
+                            Event.CaptureCompleted(requestId = requestId, photoFile = photoFile),
+                        )
+                    }
                 }
             }
+
+            override fun goToFrames() = onBackToFrames()
         }
     }
     CaptureScreen(viewModel = viewModel, listener = listener)
