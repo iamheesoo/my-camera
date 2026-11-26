@@ -33,6 +33,7 @@ internal class CaptureViewModel @Inject constructor(
     override fun handleEvent(event: Event) {
         when (event) {
             Event.ClickAllowCamera -> sendEffect(Effect.RequestCameraPermission)
+            is Event.ClickSlot -> selectSlot(event.slotIndex)
             Event.ClickRetryCapture -> retryCapture()
             Event.ClickBackToFrames -> sendEffect(Effect.GoToFrames)
             Event.CameraUnavailable -> showCameraUnavailable()
@@ -58,6 +59,16 @@ internal class CaptureViewModel @Inject constructor(
     private fun showCameraUnavailable() {
         setState { copy(isCameraReady = false) }
         pauseCapture(R.string.camera_unavailable)
+    }
+
+    private fun selectSlot(slotIndex: Int) {
+        val currentState = state.value
+        if (currentState.phase == Phase.COMPLETE &&
+            currentState.retakesRemaining > 0 &&
+            slotIndex in currentState.photoFileList.indices
+        ) {
+            setState { copy(selectedSlotIndex = slotIndex) }
+        }
     }
 
     private fun retryCapture() {

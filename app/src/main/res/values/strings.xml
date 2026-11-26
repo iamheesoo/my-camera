@@ -15,4 +15,5 @@
     <string name="capture_complete">촬영 완료</string>
     <string name="back_to_frames">프레임 선택으로</string>
     <string name="captured_slot">%1$d번 사진</string>
+    <string name="retakes_remaining">재촬영 %1$d회 남음</string>
 </resources>

@@ -14,6 +14,8 @@ object CaptureContract {
         val frame: PhotoFrame,
         val photoFileList: List<File> = emptyList(),
         val phase: Phase = Phase.WAITING,
+        val selectedSlotIndex: Int? = null,
+        val retakesRemaining: Int = 1,
         val isCameraReady: Boolean = false,
         val secondsRemaining: Int = 0,
         @param:StringRes val messageResId: Int? = null,
@@ -21,6 +23,7 @@ object CaptureContract {
 
     sealed interface Event : UiEvent {
         data object ClickAllowCamera : Event
+        data class ClickSlot(val slotIndex: Int) : Event
         data object ClickRetryCapture : Event
         data object ClickBackToFrames : Event
         data object CameraUnavailable : Event

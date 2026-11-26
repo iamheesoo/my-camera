@@ -54,8 +54,12 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
                         modifier = Modifier.weight(1f, fill = false),
                         frame = state.frame,
                         photoFileList = state.photoFileList,
+                        selectedSlotIndex = state.selectedSlotIndex,
+                        isSlotSelectionEnabled = state.retakesRemaining > 0,
+                        onClickSlot = { slotIndex -> viewModel.sendEvent(Event.ClickSlot(slotIndex)) },
                         loadThumbnail = viewModel::loadThumbnail,
                     )
+                    Text(stringResource(R.string.retakes_remaining, state.retakesRemaining))
                     Button(onClick = { viewModel.sendEvent(Event.ClickBackToFrames) }) {
                         Text(stringResource(R.string.back_to_frames))
                     }
