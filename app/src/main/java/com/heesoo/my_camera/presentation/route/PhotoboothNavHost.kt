@@ -1,6 +1,7 @@
 package com.heesoo.my_camera.presentation.route
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,21 +15,23 @@ import com.heesoo.my_camera.presentation.screen.tutorial.TutorialListener
 import com.heesoo.my_camera.presentation.screen.tutorial.TutorialScreen
 
 @Composable
-fun PhotoboothNavHost() {
+fun PhotoboothNavHost(startDestination: Route) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Route.Tutorial) {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable<Route.Tutorial> {
-            TutorialScreen(
-                viewModel = hiltViewModel(),
-                listener = object : TutorialListener {
-                    override fun goToFrameSelection() {
-                        navController.navigate(Route.FrameSelection) {
-                            popUpTo<Route.Tutorial> { inclusive = true }
-                            launchSingleTop = true
-                        }
+            val listener = object : TutorialListener {
+                override fun goToFrameSelection() {
+                    navController.navigate(Route.FrameSelection) {
+                        popUpTo<Route.Tutorial> { inclusive = true }
+                        launchSingleTop = true
                     }
-                },
-            )
+                }
+            }
+            if (startDestination == Route.Tutorial) {
+                TutorialScreen(viewModel = hiltViewModel(), listener = listener)
+            } else {
+                LaunchedEffect(navController) { listener.goToFrameSelection() }
+            }
         }
         composable<Route.FrameSelection> {
             FrameSelectionScreen(

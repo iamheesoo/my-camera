@@ -35,4 +35,6 @@
     <string name="tutorial_save_title">갤러리에 저장</string>
     <string name="tutorial_save_description">프레임 사진을 저장하고 다음 게스트 촬영을 시작해요.</string>
     <string name="tutorial_start">시작하기</string>
+    <string name="tutorial_completing">저장 중</string>
+    <string name="tutorial_completion_failed">완료 상태를 저장하지 못했어요. 다시 시도해 주세요.</string>
 </resources>

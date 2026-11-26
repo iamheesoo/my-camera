@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.hilt.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

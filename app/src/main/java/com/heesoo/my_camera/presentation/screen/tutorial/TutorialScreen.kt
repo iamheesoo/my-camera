@@ -1,5 +1,6 @@
 package com.heesoo.my_camera.presentation.screen.tutorial
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.heesoo.my_camera.R
 import com.heesoo.my_camera.presentation.screen.tutorial.TutorialContract.Effect
 import com.heesoo.my_camera.presentation.screen.tutorial.TutorialContract.Event
@@ -31,6 +33,9 @@ import com.heesoo.my_camera.presentation.screen.tutorial.TutorialContract.Event
 @Composable
 internal fun TutorialScreen(viewModel: TutorialViewModel, listener: TutorialListener) {
     val currentListener by rememberUpdatedState(listener)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    BackHandler(enabled = state.isCompleting) {}
 
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
@@ -69,11 +74,19 @@ internal fun TutorialScreen(viewModel: TutorialViewModel, listener: TutorialList
                     descriptionResId = R.string.tutorial_save_description,
                 )
             }
+            if (state.hasCompletionError) {
+                Text(
+                    text = stringResource(R.string.tutorial_completion_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             Button(
                 onClick = { viewModel.sendEvent(Event.ClickStart) },
+                enabled = !state.isCompleting,
                 modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
             ) {
-                Text(stringResource(R.string.tutorial_start))
+                Text(stringResource(if (state.isCompleting) R.string.tutorial_completing else R.string.tutorial_start))
             }
         }
     }
