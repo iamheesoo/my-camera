@@ -6,6 +6,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.heesoo.my_camera.domain.model.PhotoFrame
 import com.heesoo.my_camera.presentation.screen.capture.CaptureRoute
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionListener
 import com.heesoo.my_camera.presentation.screen.frameselection.FrameSelectionScreen
@@ -15,8 +16,8 @@ fun PhotoboothNavHost() {
     val navController = rememberNavController()
     val frameSelectionListener = remember(navController) {
         object : FrameSelectionListener {
-            override fun goToCapture() {
-                navController.navigate(Route.Capture) {
+            override fun goToCapture(frame: PhotoFrame) {
+                navController.navigate(Route.Capture(frame = frame)) {
                     launchSingleTop = true
                 }
             }

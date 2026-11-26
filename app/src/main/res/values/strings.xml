@@ -7,4 +7,7 @@
     <string name="take_test_photo">테스트 촬영</string>
     <string name="test_photo_saved">테스트 JPEG 저장 완료</string>
     <string name="test_photo_failed">촬영에 실패했어요. 다시 시도해 주세요.</string>
+    <string name="select_frame">프레임 선택</string>
+    <string name="frame_strip">3컷 세로형</string>
+    <string name="frame_grid">4컷 그리드</string>
 </resources>
