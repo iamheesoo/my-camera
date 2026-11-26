@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -47,9 +48,10 @@ private const val FLASH_FADE_MILLIS = 180
 @Composable
 internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListener) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val currentContext by rememberUpdatedState(LocalContext.current)
+    val currentListener by rememberUpdatedState(listener)
     val retakeSlotIndex = state.retakeSlotIndex
-    val flashAlpha = remember { Animatable(0f) }
+    val flashAlpha = remember(viewModel) { Animatable(0f) }
 
     BackHandler(enabled = state.isSaving) {}
 
@@ -57,20 +59,20 @@ internal fun CaptureScreen(viewModel: CaptureViewModel, listener: CaptureListene
         viewModel.sendEvent(Event.ClickCancelRetake)
     }
 
-    LaunchedEffect(viewModel.effect, listener, context) {
+    LaunchedEffect(viewModel.effect) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                Effect.RequestCameraPermission -> listener.requestCameraPermission()
-                is Effect.TakePhoto -> listener.takePhoto(effect.requestId)
-                Effect.CheckSavePermission -> listener.checkSavePermission()
-                is Effect.GoToNextGuest -> listener.goToNextGuest(effect.frame)
-                is Effect.ShowToast -> Toast.makeText(context, effect.messageResId, Toast.LENGTH_SHORT).show()
+                Effect.RequestCameraPermission -> currentListener.requestCameraPermission()
+                is Effect.TakePhoto -> currentListener.takePhoto(effect.requestId)
+                Effect.CheckSavePermission -> currentListener.checkSavePermission()
+                is Effect.GoToNextGuest -> currentListener.goToNextGuest(effect.frame)
+                is Effect.ShowToast -> Toast.makeText(currentContext, effect.messageResId, Toast.LENGTH_SHORT).show()
                 Effect.ShowCaptureFlash -> launch {
                     flashAlpha.snapTo(FLASH_PEAK_ALPHA)
                     delay(FLASH_HOLD_MILLIS)
                     flashAlpha.animateTo(targetValue = 0f, animationSpec = tween(FLASH_FADE_MILLIS))
                 }
-                Effect.GoToFrames -> listener.goToFrames()
+                Effect.GoToFrames -> currentListener.goToFrames()
             }
         }
     }
